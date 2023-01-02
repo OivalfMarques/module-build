@@ -23,8 +23,12 @@ export class AppComponent implements OnInit{
   ) {
   }
 
-  onAddModule(name: string) {
-
+  onAddModule(module: Module) {
+    if(!this.moduleService.hasAddedModule(module.name)){
+      this.moduleService.addModule(module.name);
+      this.modules = this.modules.filter((m) => m.name != module.name);
+      this.orderedModules = this.moduleService.getOrderedModules(module, this.orderedModules);
+    }
   }
 
   ngOnInit(): void {

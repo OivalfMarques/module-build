@@ -6,7 +6,7 @@ export interface Module {
 }
 
 export interface OrderedModule  extends Module{
-  order?: number
+  order: number
 }
 
 

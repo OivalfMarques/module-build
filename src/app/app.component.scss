@@ -21,4 +21,10 @@
     padding: 15px;
     flex: 1 1 auto;
   }
+
+  .import-module {
+    > span {
+      padding-right: 8px;
+    }
+  }
 }

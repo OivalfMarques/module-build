@@ -5,7 +5,7 @@
     <ng-container *ngFor="let m of modules">
       <app-card>
         <h2>{{m.name}}</h2>
-        <button (click)="onAddModule(m.name)"> add</button>
+        <button (click)="onAddModule(m)"> add</button>
       </app-card>
     </ng-container>
   </div>
@@ -15,6 +15,12 @@
       <app-card>
         <h2>{{m.name}}</h2>
         <h3>order: {{m.order || 0}}</h3>
+        <h4>Imports:</h4>
+        <p class="import-module">
+          <span *ngFor="let i of m.imports">
+            {{i}}
+          </span>
+        </p>
       </app-card>
     </ng-container>
   </div>
