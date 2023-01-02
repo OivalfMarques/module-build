@@ -2,8 +2,7 @@
 <div class="side-bar">
   <div class="side-bar-left">
     <h4>Module</h4>
-
-    <ng-container *ngFor="let m of module">
+    <ng-container *ngFor="let m of modules">
       <app-card>
         <h2>{{m.name}}</h2>
         <button (click)="onAddModule(m.name)"> add</button>
@@ -12,13 +11,11 @@
   </div>
   <div class="side-bar-content">
     <h4> Build Order</h4>
-    <ng-container *ngFor="let m of orderedModule">
+    <ng-container *ngFor="let m of orderedModules">
       <app-card>
         <h2>{{m.name}}</h2>
-        <h3>{{m.order || 0}}</h3>
+        <h3>order: {{m.order || 0}}</h3>
       </app-card>
     </ng-container>
   </div>
-
-
 </div>
