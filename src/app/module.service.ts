@@ -1,49 +1,92 @@
 import {Injectable} from '@angular/core';
-import {delay, Observable, of, tap} from "rxjs";
+import {
+  BehaviorSubject,
+  combineLatest,
+  delay,
+  filter,
+  map,
+  Observable,
+  of,
+  shareReplay,
+  startWith,
+  switchMap,
+  tap
+} from "rxjs";
 import {Module, MODULES, OrderedModule} from "./modules";
 
 @Injectable()
 export class ModuleService {
-  private addedModule = new Set<string>();
 
-  addModule(name: string) {
-    this.addedModule.add(name);
+
+  private modules$ = of(MODULES).pipe(
+    tap(() => console.log("loadModule#isLoading")),
+    delay(1000),
+    tap(() => console.log("loadModule#loaded")),
+    shareReplay(1),
+  )
+  private addedModules$ = new BehaviorSubject<Map<string, Observable<OrderedModule>>>(new Map());
+
+  private hasAddedModule(name: string) {
+    return this.addedModules$.value.has(name);
   }
 
-  hasAddedModule(name: string) {
-    return this.addedModule.has(name);
+  private getImportOrder(module: Module, modules: Map<string, Observable<OrderedModule>> ): Observable<OrderedModule>{
+    const observe = module.imports
+      .map(name => modules.get(name))
+      .filter(_ => _) as Observable<OrderedModule>[];
+
+    return  combineLatest(observe).pipe(
+      map(imported => imported.map(_ => _.order)),
+      map(orders => Math.max(...orders) + 1),
+      map(order => ({
+        ...module,
+        order
+      } as OrderedModule)),
+      startWith({
+        ...module,
+        order: 1
+      }),
+    )
   }
 
-  private getOrder(imports: string[], orderedModule: OrderedModule[]) {
-    const founds: number[] = orderedModule
-      .filter(m => imports.includes(m.name))
-      .map(m => m.order) as number [];
+  private getOrder(module: Module): Observable<OrderedModule> {
+    return this.addedModules$.pipe(
+      switchMap(modules => {
+        if(module.imports.length > 0){
+            return  this.getImportOrder(module, modules);
+        }
 
-    if(founds.length == 0){
-      return 1;
+        return of({
+          ...module,
+          order: 1
+        });
+      }),
+      shareReplay(1)
+    ) as Observable<OrderedModule>
+  }
+
+  addModule(m: Module) {
+    if (!this.hasAddedModule(m.name)) {
+      const orderedModule = this.addedModules$.value;
+      orderedModule.set(m.name, this.getOrder(m));
+      this.addedModules$.next(orderedModule);
     }
-
-    return Math.max(...founds) + 1;
   }
 
-  getOrderedModules(module: Module, orderedModule: OrderedModule[]): OrderedModule[] {
-
-    const ordered = {
-      ...module,
-      order: this.getOrder(module.imports, orderedModule),
-    }
-
-    return [
-      ...orderedModule,
-      ordered
-    ].sort((a, b) => a.order - b.order);
+  asObserveOrderedModules() {
+    return this.addedModules$.pipe(
+      map(modules => Array.from(modules.values())),
+      switchMap( modules =>  combineLatest(modules)),
+      map(modules => modules.sort((a, b) =>  a.order - b.order))
+    )
   }
 
-  loadModule(): Observable<Module[]> {
-    return of(MODULES).pipe(
-      tap(() => console.log("loadModule#isLoading")),
-      delay(1000),
-      tap(() => console.log("loadModule#loaded")),
+  loadModules(): Observable<Module[]> {
+    return combineLatest([
+      this.modules$,
+      this.addedModules$,
+    ]).pipe(
+      map(([modules, addedModules]) => modules.filter(m => !addedModules.has(m.name)))
     )
   }
 }

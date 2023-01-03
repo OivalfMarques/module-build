@@ -1,6 +1,7 @@
 import {Component, OnInit} from '@angular/core';
 import {Module, MODULES, OrderedModule} from "./modules";
 import {ModuleService} from "./module.service";
+import {Observable} from "rxjs";
 
 @Component({
   selector: 'app-root',
@@ -12,11 +13,9 @@ import {ModuleService} from "./module.service";
 })
 export class AppComponent implements OnInit{
 
-
-  modules: Module[] = []
+  modules$: Observable<Module[]> = this.moduleService.loadModules();
   title = 'module-build';
-
-  orderedModules: OrderedModule[] = [];
+  orderedModules$: Observable<OrderedModule[]> = this.moduleService.asObserveOrderedModules();
 
   constructor(
     private moduleService: ModuleService
@@ -24,16 +23,10 @@ export class AppComponent implements OnInit{
   }
 
   onAddModule(module: Module) {
-    if(!this.moduleService.hasAddedModule(module.name)){
-      this.moduleService.addModule(module.name);
-      this.modules = this.modules.filter((m) => m.name != module.name);
-      this.orderedModules = this.moduleService.getOrderedModules(module, this.orderedModules);
-    }
+    this.moduleService.addModule(module)
   }
 
+
   ngOnInit(): void {
-    this.moduleService.loadModule().subscribe((modules) => {
-      this.modules = modules
-    })
   }
 }
